@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -17,19 +19,23 @@ class UserController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => 'required|string|email',
-            'password' => 'required|string',
-        ]);
-
-        if (!Auth::attempt($credentials)) {
-            return response()->json(['message' => 'Invalid credentials'], 401);
+        try {
+            $credentials = $request->validate([
+                'email' => 'required|string|email',
+                'password' => 'required|string',
+            ]);
+    
+            if (!Auth::attempt($credentials)) {
+                return response()->json(['message' => 'Invalid credentials'], 401);
+            }
+    
+            $user = Auth::user();
+            $token = $user->createToken('auth_token')->plainTextToken;
+    
+            return response()->json(['access_token' => $token, 'token_type' => 'Bearer' , 'message' => 'Logged in successfully', 'user' => $user], 200);
+        } catch (\Throwable $th) {
+            return response()->json(['message' => $th->getMessage()], 500);
         }
-
-        $user = Auth::user();
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json(['access_token' => $token, 'token_type' => 'Bearer']);
     }
 
     public function logout(Request $request)
@@ -40,21 +46,30 @@ class UserController extends Controller
 
     public function register(Request $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'status' => 'required|string|in:active,inactive',
-        ]);
+        
+        try {
+            $validator = Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users',
+                'password' => 'required|string|min:8|confirmed',
+                'status' => 'required|string|in:active,inactive',
+            ]);
+                
+            if ($validator->fails()) {
+                return response()->json(['error' => $validator->errors()], 401);
+            }
 
-        $user = User::create([
-            'name' => $validatedData['name'],
-            'email' => $validatedData['email'],
-            'password' => bcrypt($validatedData['password']),
-            'status' => $validatedData['status'],
-        ]);
-
-        return response()->json(['user' => $user], 201);
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'status' => $request->status,
+            ]);
+    
+            return response()->json(['message' => 'User created successfully'], 201);
+        } catch (\Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 500);
+        }
     }
 
     public function show($id)
@@ -67,19 +82,29 @@ class UserController extends Controller
     {
         $user = User::withTrashed()->findOrFail($id);
 
-        $validatedData = $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'email' => 'sometimes|required|string|email|max:255|unique:users,email,' . $id,
-            'password' => 'sometimes|required|string|min:8|confirmed',
-            'status' => 'sometimes|required|string|in:active,inactive',
-        ]);
+        if ($user) {
+            try {
+                $validator = Validator::make($request->all(), [
+                    'name' => 'sometimes|string|max:255',
+                    'email' => 'sometimes|string|email|max:255',
+                    'password' => 'sometimes|string|min:8|confirmed',
+                    'status' => 'sometimes|string|in:active,inactive',
 
-        $user->update(array_filter([
-            'name' => $validatedData['name'] ?? $user->name,
-            'email' => $validatedData['email'] ?? $user->email,
-            'password' => isset($validatedData['password']) ? bcrypt($validatedData['password']) : $user->password,
-            'status' => $validatedData['status'] ?? $user->status,
-        ]));
+                ]);
+                if ($validator->fails()) {
+                    return response()->json(['error' => $validator->errors()], 401);
+                }
+
+                $user->update([
+                    'name' => $request->name,
+                    'email' => $request->email,
+                    'password' => Hash::make($request->password),
+                    'status' => $request->status,
+                ]);
+            } catch (\Throwable $th) {
+                return response()->json(['message' => $th->getMessage()], 500);
+            }
+        }
 
         return response()->json(['user' => $user], 200);
     }

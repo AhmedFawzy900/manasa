@@ -19,7 +19,7 @@ class LessonController extends Controller
         $validatedData = $request->validate([
             'course_id' => 'required|exists:courses,id',
             'title' => 'required|string|max:255',
-            'description' => 'required|string',
+            'content' => 'required|string',
             'pdf_link' => 'nullable|url',
             'video_link' => 'nullable|url',
         ]);
@@ -42,7 +42,7 @@ class LessonController extends Controller
         $validatedData = $request->validate([
             'course_id' => 'required|exists:courses,id',
             'title' => 'required|string|max:255',
-            'description' => 'required|string',
+            'content' => 'required|string',
             'pdf_link' => 'nullable|url',
             'video_link' => 'nullable|url',
         ]);

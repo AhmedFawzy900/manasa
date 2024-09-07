@@ -20,9 +20,17 @@ class CourseController extends Controller
             'subcategory_id' => 'required|exists:subcategories,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'price' => 'required|numeric',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $course = Course::create($validatedData);
+        $course = Course::create([
+            'subcategory_id' => $request->subcategory_id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'price' => $request->price,
+            'image' => $request->image->store('courses_images'),
+        ]);
 
         return response()->json(['course' => $course], 201);
     }
@@ -41,6 +49,7 @@ class CourseController extends Controller
             'subcategory_id' => 'required|exists:subcategories,id',
             'title' => 'required|string|max:255',
             'description' => 'required|string',
+            'price' => 'required|numeric',
         ]);
 
         $course->update($validatedData);
