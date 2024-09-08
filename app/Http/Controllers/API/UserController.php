@@ -51,8 +51,9 @@ class UserController extends Controller
             $validator = Validator::make($request->all(), [
                 'name' => 'required|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
-                'password' => 'required|string|min:8|confirmed',
-                'status' => 'required|string|in:active,inactive',
+                'role' => 'required|in:student,teacher,admin',
+                'password' => 'required|string|min:8',
+                'status' => 'string|in:active,inactive',
             ]);
                 
             if ($validator->fails()) {
@@ -64,6 +65,7 @@ class UserController extends Controller
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'status' => $request->status,
+                'role' => $request->role
             ]);
     
             return response()->json(['message' => 'User created successfully'], 201);
@@ -87,7 +89,7 @@ class UserController extends Controller
                 $validator = Validator::make($request->all(), [
                     'name' => 'sometimes|string|max:255',
                     'email' => 'sometimes|string|email|max:255',
-                    'password' => 'sometimes|string|min:8|confirmed',
+                    'password' => 'sometimes|string|min:8',
                     'status' => 'sometimes|string|in:active,inactive',
 
                 ]);
