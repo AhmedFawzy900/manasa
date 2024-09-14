@@ -16,24 +16,38 @@ class CourseController extends Controller
 
     public function store(Request $request)
     {
-        $validatedData = $request->validate([
-            'subcategory_id' => 'required|exists:subcategories,id',
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'price' => 'required|numeric',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
-
-        $course = Course::create([
-            'subcategory_id' => $request->subcategory_id,
-            'title' => $request->title,
-            'description' => $request->description,
-            'price' => $request->price,
-            'image' => $request->image->store('courses_images'),
-        ]);
-
-        return response()->json(['course' => $course], 201);
+        try {
+            // Validate the incoming request data
+            $validatedData = $request->validate([
+                'subcategory_id' => 'required|exists:subcategories,id',
+                'title' => 'required|string|max:255',
+                'description' => 'required|string',
+                'price' => 'required|numeric',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            ]);
+    
+            // Create a new course with the validated data
+            $course = Course::create([
+                'subcategory_id' => $request->subcategory_id,
+                'title' => $request->title,
+                'description' => $request->description,
+                'price' => $request->price,
+                'image' => $request->image->store('courses_images'),
+            ]);
+    
+            // Return a successful response with the created course
+            return response()->json(['course' => $course], 201);
+    
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Handle validation errors
+            return response()->json(['error' => 'Validation failed', 'message' => $e->getMessage()], 422);
+    
+        } catch (\Exception $e) {
+            // Handle any other types of exceptions
+            return response()->json(['error' => 'An unexpected error occurred', 'message' => $e->getMessage()], 500);
+        }
     }
+
 
     public function show($id)
     {

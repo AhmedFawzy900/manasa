@@ -13,7 +13,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = User::withTrashed()->get(); // Include soft deleted users
+        $users = User::get(); // Include soft deleted users
         return response()->json(['users' => $users], 200);
     }
 
